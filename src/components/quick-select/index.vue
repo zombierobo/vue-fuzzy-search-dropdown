@@ -13,7 +13,6 @@
     </div>
     <PopoutIconButton @click="openModal" title="Select in modal"/>
     <Modal v-if="showModal" @close="closeModal">
-      <h5 slot="header">Select product</h5>
       <div slot="body">
         <SearchableGrid
           :selected="selected"

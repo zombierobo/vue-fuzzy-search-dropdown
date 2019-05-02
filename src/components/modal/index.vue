@@ -1,19 +1,22 @@
 <template>
   <transition name="modal">
-    <div class="modal-mask">
-      <div class="modal-wrapper">
-        <div class="modal-container">
-          <div class="modal-header">
-            <slot name="header">default header</slot>
+    <div class="modal-mask" @keydown="onKeydown" tabindex="0">
+      <div class="modal-container">
+        <div class="modal-header">
+          <div class="modal-header-content-wrapper">
+            <slot name="header"></slot>
           </div>
+          <span>
+            <CloseIconButton @click="closeModal" title="close"/>
+          </span>
+        </div>
 
-          <div class="modal-body">
-            <slot name="body">default body</slot>
-          </div>
+        <div class="modal-body">
+          <slot name="body"></slot>
+        </div>
 
-          <div class="modal-footer">
-            <slot name="footer"></slot>
-          </div>
+        <div class="modal-footer">
+          <slot name="footer"></slot>
         </div>
       </div>
     </div>
@@ -32,44 +35,39 @@
   transition: opacity 0.3s ease;
 }
 
-.modal-wrapper {
-  width: 100%;
-  height: 100%;
-}
-
 .modal-container {
   width: 70%;
   height: calc(100% - 120px);
   margin: 60px auto;
   padding: 20px 30px;
-  overflow: auto;
   background-color: #fff;
   border-radius: 2px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.33);
   transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
-.modal-header h3 {
-  margin-top: 0;
-  color: #42b983;
+.modal-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.modal-header-content-wrapper {
+  flex-grow: 1;
 }
 
 .modal-body {
-  margin: 20px 0;
+  margin-bottom: 15px;
+  overflow: auto;
 }
 
-.modal-default-button {
-  float: right;
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
 }
-
-/*
- * The following styles are auto-applied to elements with
- * transition="modal" when their visibility is toggled
- * by Vue.js.
- *
- * You can easily play with the modal transition by editing
- * these styles.
- */
 
 .modal-enter {
   opacity: 0;
@@ -87,8 +85,23 @@
 </style>
 
 <script>
+import CloseIconButton from '../icons/CloseIconButton';
+
 export default {
-  name: 'modal'
+  name: 'modal',
+  components: {
+    CloseIconButton
+  },
+  methods: {
+    onKeydown: function(event) {
+      if (event.keyCode === 27) {
+        this.closeModal();
+      }
+    },
+    closeModal: function() {
+      this.$emit('close');
+    }
+  }
 };
 </script>
 

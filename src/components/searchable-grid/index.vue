@@ -1,5 +1,5 @@
 <template>
-  <div class="searchable-grid">
+  <div class="searchable-grid" tabindex="-1" @keydown="componentLevelKeydown">
     <div class="searchable-grid__search-bar">
       <input
         :value="searchText"
@@ -8,10 +8,10 @@
         :placeholder="placeholder"
       >
     </div>
-    <div class="searchable-grid__results">
+    <div class="searchable-grid__results" ref="elementListRef">
       <div
         @click="selectOption(element.target)"
-        @keydown="onKeydown($event, element.target)"
+        @keydown="onResultElementKeydown($event, element.target)"
         v-for="(element, index) in options"
         :key="index"
         class="searchable-grid__results_element"
@@ -36,12 +36,13 @@
 <style scoped lang="scss">
 .searchable-grid {
   & > .searchable-grid__search-bar {
-    margin: 30px 0px;
+    padding-top: 6px;
+    margin-bottom: 30px;
     text-align: center;
 
     & > input {
       border-radius: 6px;
-      border: 1px solid #CCC;
+      border: 1px solid #ccc;
       padding: 12px;
       width: 330px;
       font-size: 1rem;
@@ -57,7 +58,7 @@
       display: flex;
       align-items: center;
       flex-direction: column;
-      border: 1px solid #EEE;
+      border: 1px solid #eee;
       padding: 21px;
       margin-bottom: 21px;
       margin-right: 21px;
@@ -103,9 +104,12 @@ export default {
     placeholder: String
   },
   mounted: function() {
-    this.$refs.searchInputRef.focus();
+    this.focusSearchInput();
   },
   methods: {
+    focusSearchInput: function() {
+      this.$refs.searchInputRef.focus();
+    },
     updateSearchText: function(searchText) {
       this.$emit('searchText-change', searchText);
     },
@@ -116,11 +120,67 @@ export default {
       this.$emit('selection-change', option);
       this.updateSearchText('');
     },
-    onKeydown: function(event, option) {
+    onResultElementKeydown: function(event, option) {
       switch (event.keyCode) {
         case 13:
           this.selectOption(option);
           break;
+      }
+    },
+    componentLevelKeydown: function(event) {
+      switch (event.keyCode) {
+        case 38:
+          this.handleArrowUp();
+          break;
+        case 40:
+          this.handleArrowDown();
+          break;
+      }
+    },
+    handleArrowUp: function() {
+      const currentFocusedIdx = this.currentFocusedElementIndex();
+      if (currentFocusedIdx !== undefined) {
+        if (currentFocusedIdx - 1 >= 0) {
+          this.focusResultElement(currentFocusedIdx - 1);
+        } else {
+          this.focusSearchInput();
+        }
+      } else {
+        if (this.options.length > 0) {
+          this.focusResultElement(0);
+        }
+      }
+    },
+    handleArrowDown: function() {
+      const currentFocusedIdx = this.currentFocusedElementIndex();
+      if (currentFocusedIdx !== undefined) {
+        if (currentFocusedIdx + 1 < this.options.length) {
+          this.focusResultElement(currentFocusedIdx + 1);
+        } else {
+          this.focusSearchInput();
+        }
+      } else {
+        if (this.options.length > 0) {
+          this.focusResultElement(0);
+        }
+      }
+    },
+    focusResultElement: function(index) {
+      if (
+        this.$refs.elementListRef &&
+        this.$refs.elementListRef.children &&
+        this.$refs.elementListRef.children[index]
+      ) {
+        this.$refs.elementListRef.children[index].focus();
+      }
+    },
+    searchInputInFocus: function() {
+      return this.$refs.searchInputRef === document.activeElement;
+    },
+    currentFocusedElementIndex: function() {
+      if (this.$refs.elementListRef && this.$refs.elementListRef.children) {
+        const resultElements = [...this.$refs.elementListRef.children]; // convert HTMLCollection to array
+        return resultElements.findIndex(c => c === document.activeElement);
       }
     }
   }

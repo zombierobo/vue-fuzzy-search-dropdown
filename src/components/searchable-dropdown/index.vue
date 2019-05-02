@@ -3,7 +3,8 @@
     v-click-outside="clickedOutsideDropdown"
     class="searchable-dropdown"
     :class="{'expanded': dropdownOpen}"
-    @keydown="onKeydown"
+    @keydown="componentLevelKeydown"
+    tabindex="-1"
   >
     <div class="searchable-dropdown__search-bar">
       <div
@@ -34,12 +35,13 @@
       <div class="searchable-dropdown_list" ref="elementListRef">
         <div
           @click="selectOption(element.target)"
+          @keydown="onResultElementKeydown($event, element.target)"
+          @blur="onResultElementBlur"
           v-for="(element, index) in options"
           :key="index"
           class="searchable-dropdown_list_element"
-          :class="{highlight: index === focusedElementIndex, selected: element.target === selected}"
+          :class="{selected: element.target === selected}"
           tabindex="-1"
-          @blur="onResultElementBlur"
         >
           <span class="searchable-dropdown_list_element_image-wrapper">
             <img v-if="element.target.previewUrl" :src="element.target.previewUrl">
@@ -155,7 +157,6 @@
         border-radius: 3px;
         cursor: pointer;
 
-        &.highlight,
         &:hover {
           box-shadow: 0px 0px 3px 2px #eee;
         }
@@ -207,8 +208,7 @@ export default {
   data: function() {
     return {
       dropdownOpen: false,
-      inputFieldInFocus: false,
-      focusedElementIndex: undefined
+      inputFieldInFocus: false
     };
   },
   computed: {
@@ -220,15 +220,23 @@ export default {
     }
   },
   methods: {
-    clearFocusedElementIndex: function() {
-      this.focusedElementIndex = undefined;
+    currentFocusedElementIndex: function() {
+      if (this.$refs.elementListRef && this.$refs.elementListRef.children) {
+        const resultElements = [...this.$refs.elementListRef.children]; // convert HTMLCollection to array
+        return resultElements.findIndex(c => c === document.activeElement);
+      }
+    },
+    focusSearchInput: function() {
+      this.$refs.searchInputRef.focus();
+    },
+    blurSearchInput: function() {
+      this.$refs.searchInputRef.blur();
     },
     openDropdown: function() {
       this.dropdownOpen = true;
     },
     closeDropdown: function() {
       this.dropdownOpen = false;
-      this.clearFocusedElementIndex();
     },
     clearSelection: function() {
       this.selectOption(undefined);
@@ -237,7 +245,6 @@ export default {
       this.$emit('selection-change', option);
       this.updateSearchText('');
       this.closeDropdown();
-      this.$refs.searchInputRef.blur();
     },
     updateSearchText: function(searchText) {
       this.$emit('searchText-change', searchText);
@@ -249,7 +256,6 @@ export default {
     onSearchInputChange: function(event) {
       this.updateSearchText(event.target.value);
       this.openDropdown();
-      this.clearFocusedElementIndex();
     },
     onSearchInputBlur: function() {
       this.inputFieldInFocus = false;
@@ -280,45 +286,65 @@ export default {
     onSearchInputClick: function(event) {
       event.preventDefault();
       if (!this.dropdownOpen) {
-        this.$refs.searchInputRef.focus();
+        this.focusSearchInput();
         this.openDropdown();
       } else {
-        this.$refs.searchInputRef.blur();
+        this.blurSearchInput();
         this.closeDropdown();
       }
     },
-    focusActiveListItem: function(focusedElementIndex) {
-      this.$refs.elementListRef.children[focusedElementIndex].focus();
+    focusResultElement: function(index) {
+      if (
+        this.$refs.elementListRef &&
+        this.$refs.elementListRef.children &&
+        this.$refs.elementListRef.children[index]
+      ) {
+        this.$refs.elementListRef.children[index].focus();
+      }
     },
-    onKeydown: function(event) {
+    onResultElementKeydown: function(event, option) {
+      switch (event.keyCode) {
+        case 13:
+          this.selectOption(option);
+          break;
+      }
+    },
+    componentLevelKeydown: function(event) {
       switch (event.keyCode) {
         case 38:
-          if (this.focusedElementIndex === undefined) {
-            this.focusedElementIndex = 0;
-          } else if (this.focusedElementIndex > 0) {
-            this.focusedElementIndex--;
-          }
-          this.focusActiveListItem(this.focusedElementIndex);
+          this.handleArrowUp();
           break;
         case 40:
-          if (this.inputFieldInFocus && !this.dropdownOpen) {
-            this.openDropdown();
-          }
-          if (this.focusedElementIndex === undefined) {
-            this.focusedElementIndex = 0;
-          } else if (this.focusedElementIndex < this.options.length - 1) {
-            this.focusedElementIndex++;
-          }
-          this.focusActiveListItem(this.focusedElementIndex);
+          this.handleArrowDown();
           break;
-        case 13:
-          if (
-            this.focusedElementIndex !== undefined &&
-            this.focusedElementIndex < this.options.length
-          ) {
-            this.selectOption(this.options[this.focusedElementIndex].target);
-          }
-          break;
+      }
+    },
+    handleArrowUp: function() {
+      const currentFocusedIdx = this.currentFocusedElementIndex();
+      if (currentFocusedIdx !== undefined) {
+        if (currentFocusedIdx - 1 >= 0) {
+          this.focusResultElement(currentFocusedIdx - 1);
+        } else {
+          this.focusSearchInput();
+        }
+      } else {
+        if (this.options.length > 0) {
+          this.focusResultElement(0);
+        }
+      }
+    },
+    handleArrowDown: function() {
+      const currentFocusedIdx = this.currentFocusedElementIndex();
+      if (currentFocusedIdx !== undefined) {
+        if (currentFocusedIdx + 1 < this.options.length) {
+          this.focusResultElement(currentFocusedIdx + 1);
+        } else {
+          this.focusSearchInput();
+        }
+      } else {
+        if (this.options.length > 0) {
+          this.focusResultElement(0);
+        }
       }
     },
     clickedOutsideDropdown: function() {

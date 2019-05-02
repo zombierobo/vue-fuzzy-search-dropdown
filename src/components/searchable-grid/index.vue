@@ -15,6 +15,7 @@
         v-for="(element, index) in options"
         :key="index"
         class="searchable-grid__results_element"
+        :class="{selected: element.target === selected}"
         tabindex="0"
       >
         <span class="searchable-grid__results_element_image-wrapper">

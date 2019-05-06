@@ -2,20 +2,22 @@
   <div class="quick-select">
     <div class="search-dropdown-container">
       <SearchableDropdown
-        :selected="selected"
+        :selected="selectedOptionAsObject"
         :options="optionsAfterSortAndFilter"
         :searchActive="searchActive"
         :searchText="filter.searchText"
         :placeholder="placeholder"
         @selection-change="updateSelection($event)"
         @searchText-change="updateSearchText($event)"
+        @selection-active="updateDropdownSelectionActive"
+        ref="searchableDropdownCompRef"
       />
     </div>
-    <PopoutIconButton @click="openModal" title="Select in modal"/>
+    <PopoutIconButton @click="openModal" title="Select in modal" :disableTabActivation="true"/>
     <Modal v-if="showModal" @close="closeModal">
       <div slot="body">
         <SearchableGrid
-          :selected="selected"
+          :selected="selectedOptionAsObject"
           :options="optionsAfterSortAndFilter"
           :searchActive="searchActive"
           :searchText="filter.searchText"
@@ -32,9 +34,8 @@
 import SearchableDropdown from '../searchable-dropdown';
 import SearchableGrid from '../searchable-grid';
 import PopoutIconButton from '../icons/PopoutIconButton';
-import Modal from '../modal';
-import mockOptions from '../../mock/mock-options';
 import { fuzzySort, highlightResult } from './utils/fuzzy-sort';
+import Modal from '../modal';
 
 export default {
   name: 'quick-select',
@@ -44,12 +45,14 @@ export default {
     Modal,
     SearchableGrid
   },
+  props: {
+    options: Array,
+    selected: String,
+    placeholder: String
+  },
   data: function() {
     return {
-      options: mockOptions,
-      selected: undefined,
       showModal: false,
-      placeholder: 'Type here to search and select',
       filter: {
         searchText: ''
       }
@@ -58,6 +61,13 @@ export default {
   computed: {
     searchActive: function() {
       return this.filter.searchText.length > 0;
+    },
+    selectedOptionAsObject: function() {
+      if (this.options && this.selected) {
+        return this.options.find(o => o.id === this.selected);
+      } else {
+        return undefined;
+      }
     },
     optionsAfterSortAndFilter: function() {
       const { searchText } = this.filter;
@@ -68,20 +78,23 @@ export default {
               textWithMarkup: highlightResult(sortedElement)
             })
           )
-        : this.options.map(o => ({
-            target: o
-          }));
+        : this.options.map(o => ({ target: o }));
     }
   },
   methods: {
     updateSelection: function(option) {
-      this.selected = option;
+      this.$emit('selection-change', option);
     },
     openModal: function() {
       this.showModal = true;
+      this.$emit('selection-active', true);
     },
     closeModal: function() {
       this.showModal = false;
+      this.$emit('selection-active', false);
+    },
+    updateDropdownSelectionActive: function(flag) {
+      this.$emit('selection-active', flag);
     },
     updateSelectionFromGrid: function(option) {
       this.updateSelection(option);
@@ -89,6 +102,12 @@ export default {
     },
     updateSearchText: function(searchText) {
       this.filter.searchText = searchText;
+    },
+    /**
+     * exposed method for parent component to instruct this component to take focus.
+     */
+    takeFocus: function() {
+      this.$refs.searchableDropdownCompRef.takeFocus();
     }
   }
 };

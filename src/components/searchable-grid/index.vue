@@ -41,11 +41,11 @@
     text-align: center;
 
     & > input {
+      font-size: inherit;
       border-radius: 6px;
       border: 1px solid #ccc;
       padding: 12px;
       width: 330px;
-      font-size: 1rem;
     }
   }
 
@@ -94,6 +94,8 @@
 </style>
 
 <script>
+import scrollIntoView from 'scroll-into-view-if-needed';
+
 export default {
   name: 'searchable-grid',
   props: {
@@ -172,6 +174,10 @@ export default {
         this.$refs.elementListRef.children[index]
       ) {
         this.$refs.elementListRef.children[index].focus();
+        scrollIntoView(this.$refs.elementListRef.children[index], {
+          behavior: 'smooth',
+          scrollMode: 'if-needed',
+        });
       }
     },
     searchInputInFocus: function() {
@@ -186,4 +192,3 @@ export default {
   }
 };
 </script>
-

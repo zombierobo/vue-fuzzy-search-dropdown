@@ -1,5 +1,5 @@
 <template>
-    <actual-font-awesome-icon :icon="icon" />
+  <actual-font-awesome-icon :icon="icon"/>
 </template>
 
 <script>
@@ -8,14 +8,15 @@
  * https://github.com/FortAwesome/vue-fontawesome
  */
 import { library } from '@fortawesome/fontawesome-svg-core';
-import { faTimes, faAngleDown, faArrowUp } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
-
-library.add(
+import {
   faTimes,
   faAngleDown,
-  faArrowUp
-);
+  faArrowUp,
+  faSearchPlus
+} from '@fortawesome/free-solid-svg-icons';
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
+
+library.add(faTimes, faAngleDown, faArrowUp, faSearchPlus);
 
 export default {
   name: 'font-awesome-icon',
